@@ -1,34 +1,27 @@
+import torch
+from torch.utils.data import Dataset
 import pandas as pd
-import yfinance as yf
 import numpy as np
-import pickle
 
 
-def download_dataset(start_date, end_date):
-    wiki_table = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')
-    sp_tickers = wiki_table[0]
-    tickers = [ticker.replace('.', '-') for ticker in sp_tickers['Symbol'].to_list()]
-    data = yf.download(tickers, start_date, end_date)
-    return data
+class StockReturnsDataset(Dataset):
+    def __init__(self, dataset: pd.DataFrame, window_size=5) -> None:
+        super().__init__()
+        # preprocess dataset
+        business_days_index = pd.date_range(start=dataset.index.min(), end=dataset.index.max(), freq='B')
+        df = dataset['Adj Close'].reindex(business_days_index, fill_value=np.nan)
+        self.returns = df.pct_change(1, fill_method="ffill")   # TODO: maybe .dropna()
+        self.window_size = window_size
+        self.window_index = []
+        for w in self.returns.rolling(window_size):
+            if len(w) < window_size:
+                continue
+            self.window_index.append(w.index)
 
+    def __len__(self):
+        return len(self.window_index)
 
-if __name__ == '__main__':
-    START_DATE = '2018-07-01'
-    END_TRAIN_DATE = '2023-05-31'
-    END_TEST_DATE = '2023-06-30'
-
-    dataset = download_dataset(START_DATE, END_TEST_DATE)
-    print(f"Dataset shape: {dataset.shape}")
-
-    with open("dataset.pkl", "wb") as f:
-        pickle.dump(dataset, f)
-    
-    train_data = dataset[dataset.index < END_TRAIN_DATE]
-    print(f"Train data shape: {train_data.shape}")
-    with open("train_dataset.pkl", "wb") as f:
-        pickle.dump(dataset, f)
-
-    test_data = dataset[dataset.index >= END_TRAIN_DATE]
-    print(f"Test data shape: {test_data.shape}")
-    with open("test_dataset.pkl", "wb") as f:
-        pickle.dump(dataset, f)
+    def __getitem__(self, index):
+        window = self.df.loc[self.window_index[index]]
+        window = torch.from_numpy(window.values).float()
+        return window[:-1], window[-1]
