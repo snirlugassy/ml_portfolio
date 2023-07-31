@@ -18,3 +18,24 @@ Installing other requirements:
 ```bash
 python3 -m pip instal -r requirements.txt
 ```
+Algorithms to test:
+
+MVP
+
+Anna
+Linear regression / with second order
+Decision trees / Random forest
+LARS / LASSO regression 
+
+Eden
+Online learning (follow the leader…)
+Reinforcement learning
+1D-CNN (torch.nn.Conv1d)
+
+Snir
+XGboost (boosted trees)
+SVM
+MLP (network with only linear + activations)
+RNN (LSTM, GRU, …) https://arxiv.org/pdf/2005.13665v3.pdf
+
+Ensemble of several models
