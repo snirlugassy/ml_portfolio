@@ -19,11 +19,11 @@ def get_data():
     return data
 
 
-def test_portfolio():
+def test_portfolio( portfolio):
     print("Loading data...")
     full_train = get_data()
     returns = []
-    strategy = Portfolio()
+    strategy = portfolio()
     for test_date in pd.date_range(END_TRAIN_DATE, END_TEST_DATE):
         if test_date not in full_train.index:
             continue
@@ -47,4 +47,4 @@ def test_portfolio():
     print("Portfolio Variance: ", port_variance)
 
 if __name__ == '__main__':
-    test_portfolio()
+    test_portfolio(Portfolio)
