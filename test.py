@@ -14,12 +14,12 @@ END_TRAIN_DATE = '2023-05-31'
 END_TEST_DATE = '2023-06-30'
 
 def get_data():
-    with open("train_dataset.pkl", "rb") as f:
+    with open("dataset.pkl", "rb") as f:
         data = pickle.load(f)
     return data
 
 
-def test_portfolio( portfolio):
+def test_portfolio(portfolio):
     print("Loading data...")
     full_train = get_data()
     returns = []
