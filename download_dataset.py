@@ -26,9 +26,9 @@ if __name__ == '__main__':
     train_data = dataset[dataset.index < END_TRAIN_DATE]
     print(f"Train data shape: {train_data.shape}")
     with open("train_dataset.pkl", "wb") as f:
-        pickle.dump(dataset, f)
+        pickle.dump(train_data, f)
 
     test_data = dataset[dataset.index >= END_TRAIN_DATE]
     print(f"Test data shape: {test_data.shape}")
     with open("test_dataset.pkl", "wb") as f:
-        pickle.dump(dataset, f)
+        pickle.dump(test_data, f)
