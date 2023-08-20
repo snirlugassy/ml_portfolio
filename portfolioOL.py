@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pickle
+from sklearn.model_selection import train_test_split
 
 from classic import find_mvp_portfolio, find_tangent_portfolio
 from Portfolio1DCNN import Portfolio1DCNN
@@ -17,6 +18,38 @@ class Portfolio:
         self.weights = {hypothesis: 0 for hypothesis in self.hypothesis}
         self.gamma = gamma
         pass
+
+    def learn_optimal_gamma(self, train_data, gamma_values=[0.1, 0.3, 0.5, 0.7, 0.9], window_size=31):
+        # Split the data into training and validation sets
+        train_data, validation_data = train_test_split(train_data, test_size=0.2, shuffle=False)
+
+        best_gamma = None
+        best_performance = float('-inf')  # Starting with a very low value
+
+        for gamma in gamma_values:
+            self.gamma = gamma
+            self.train(train_data, window_size=window_size)
+            performance = self.validate(validation_data, window_size=window_size)
+
+            if performance > best_performance:
+                best_performance = performance
+                best_gamma = gamma
+
+        self.gamma = best_gamma
+        return best_gamma
+
+    def validate(self, validation_data, window_size=31):
+        total_reward = 0
+        for start in range(len(validation_data) - window_size + 1):
+            window_data = validation_data.iloc[start:start + window_size - 1]
+            last_day_data = validation_data.iloc[start + window_size - 1]
+
+            # Get portfolio for the window
+            portfolio_weights = self.get_portfolio(window_data)
+            recommendation = np.dot(portfolio_weights, last_day_data)
+
+            total_reward += recommendation
+        return total_reward / (len(validation_data) - window_size + 1)
 
     def train(self, train_data: pd.DataFrame, window_size = 31):
 
