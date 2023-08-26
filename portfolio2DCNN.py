@@ -25,7 +25,7 @@ class CNN2D(nn.Module):
         return x
 
 
-class MultiStockPredictorCNN:
+class portfolio2CNN:
     def __init__(self, lookback=30, lr=0.01, epochs=100):
         self.lookback = lookback  # number of days to look back
         self.epochs = epochs
@@ -67,8 +67,7 @@ class MultiStockPredictorCNN:
         return self.model(recent_data.iloc[-31:, -num_stocks:])
 
 
-
-class Portfolio1DCNN:
+class portfolio2DCNN:
     def __init__(self, lookback=60, epochs=100, batch_size=32, lr=0.01):
         self.lookback = lookback  # number of days to look back
         self.epochs = epochs
@@ -140,6 +139,6 @@ if __name__ == '__main__':
     returns = adj_close.pct_change(1, fill_method="ffill")
     print(data)
 
-    portfolio = MultiStockPredictorCNN()
+    portfolio = portfolio2CNN()
     portfolio.train_wights(returns)
     # print(portfolio.get_portfolio())
