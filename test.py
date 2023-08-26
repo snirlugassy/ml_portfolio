@@ -43,7 +43,7 @@ def test_portfolio(strategy):
         returns.append({'date': test_date, 'return': cur_return})
     returns = pd.DataFrame(returns).set_index('date')
     mean_return, std_returns = returns.mean(), returns.std()
-    sharpe = float(mean_return / std_returns)
+    sharpe = float(mean_return.values / std_returns.values)
     print("Sharp Ratio: ", sharpe)
 
     # portfolio variance
@@ -67,9 +67,10 @@ if __name__ == '__main__':
         model_stocks = os.path.join(model_dir, "stocks.txt")
         with open(model_stocks) as f:
             stocks = f.readlines()
+            stocks = [str(s).strip() for s in stocks]
 
-        net = RRNet(dim=len(stocks), depth=args['depth'])
-        strategy = Portfolio(net)
+        net = RRNet(dim=len(stocks), depth=args['depth']).eval()
+        strategy = Portfolio(net, stocks)
 
         print("----------------------------------")
         print(model)
@@ -82,7 +83,7 @@ if __name__ == '__main__':
             })
         except:
             print("FAILED")
-        print("----------------------------------")
+
     
-    results = pd.DataFrame(results)
+    results = pd.DataFrame(results).sort_values(by="sharpe", ascending=False)
     results.to_csv("results.csv", index=False)

@@ -3,6 +3,7 @@ import sys
 import json
 import pickle
 import argparse
+import random
 from uuid import uuid4
 
 import torch
@@ -41,9 +42,14 @@ if __name__ == "__main__":
     args.add_argument("--seed", type=int)
     args.add_argument("--epochs", type=int)
     args.add_argument("--batch_size", type=int, default=64)
+    args.add_argument("--pct-change", type=int, default=1)
     args.add_argument("--depth", type=int)
     args.add_argument("--dropout", type=float)
     args.add_argument("--learning-rate", type=float)
+    args.add_argument("--normalization-factor", type=float, default=0.01)
+    args.add_argument("--normalization-order", type=int, default=1)
+    args.add_argument("--step-lr-gamma", type=float, default=0.9)
+    args.add_argument("--step-lr-every", type=int, default=10)
     args.add_argument("--use_batch_norm", action="store_true")
     args.add_argument("--use_skip_connection", action="store_true")
     args.add_argument("--apply_augments", action="store_true")
@@ -51,6 +57,7 @@ if __name__ == "__main__":
     args = args.parse_args()
 
     torch.manual_seed(args.seed)
+    random.seed(args.seed)
 
     experiment_id = str(uuid4()).replace("-", "")[:8]
     print("EXPERIMENT:", experiment_id)
@@ -85,8 +92,8 @@ if __name__ == "__main__":
 
     assert pd.isna(test_df).any().sum() == 0
 
-    train_dataset = SingleReturnsDataset(train_df, apply_augment=args.apply_augments)
-    test_dataset = SingleReturnsDataset(test_df, apply_augment=args.apply_augments)
+    train_dataset = SingleReturnsDataset(train_df, apply_augment=args.apply_augments, pct_change=args.pct_change)
+    test_dataset = SingleReturnsDataset(test_df, apply_augment=args.apply_augments, pct_change=args.pct_change)
 
     print("train dataset length", len(train_dataset))
     print("test dataset length", len(test_dataset))
@@ -110,12 +117,19 @@ if __name__ == "__main__":
     # training loop
 
     optimizer = torch.optim.Adam(net.parameters(), lr=args.learning_rate, maximize=True)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 5, gamma=0.5) # TODO: config
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(
+        optimizer, 
+        step_size=args.step_lr_every, 
+        gamma=args.step_lr_gamma
+    )
 
     net.train()
 
     test_sharpe_ratio = []
     best_epoch_sharpe = (-1, -1) # iteration, share ratio
+
+    nf = args.normalization_factor
+    nord = args.normalization_order
 
     with tqdm(total=args.epochs * len(train_loader), postfix={"epoch":0, "lr": lr_scheduler.get_last_lr()}) as progress:
         for epoch in range(args.epochs):
@@ -127,7 +141,7 @@ if __name__ == "__main__":
                 # forward
                 output = net(X)
                 r = output * y
-                sharpe_ratio = torch.mean(torch.std(r, dim=-1) / torch.mean(r, dim=-1) + 0.01 * torch.norm(output, p=1, dim=-1))
+                sharpe_ratio = torch.mean(torch.std(r, dim=-1) / torch.mean(r, dim=-1) + nf * torch.norm(output, p=nord, dim=-1))
 
                 # backward
                 optimizer.zero_grad()
