@@ -67,69 +67,6 @@ class portfolio2CNN:
         return self.model(recent_data.iloc[-31:, -num_stocks:])
 
 
-class portfolio2DCNN:
-    def __init__(self, lookback=60, epochs=100, batch_size=32, lr=0.01):
-        self.lookback = lookback  # number of days to look back
-        self.epochs = epochs
-        self.batch_size = batch_size
-        self.lr = lr
-        # self.model = CNN1D(lookback)
-        self.scaler = MinMaxScaler(feature_range=(0, 1))
-        self.criterion = nn.MSELoss()
-        self.optimizer = Adam(self.model.parameters(), lr=self.lr)
-
-    def pre_train(self, stock_df, save_path):
-        self.model.train()
-
-        for idx, column in enumerate(stock_df.columns):
-            print(f"Training on stock: {column}")
-            stock_prices = stock_df[column].dropna()
-            X, y = self.pre_process(stock_prices)
-            X = torch.tensor(X, dtype=torch.float).view(-1, 1, self.lookback)  # reshape into (batch_size, 1, lookback)
-            y = torch.tensor(y, dtype=torch.float).view(-1, 1)  # reshape into (batch_size, 1)
-
-            for epoch in range(self.epochs):
-                self.optimizer.zero_grad()
-                output = self.model(X)
-                loss = self.criterion(output, y)
-                loss.backward()
-                self.optimizer.step()
-
-                if (epoch + 1) % 20 == 0:  # Print progress every 20 epochs
-                    print(f"Epoch: {epoch + 1}/{self.epochs}, Loss: {loss.item()}")
-
-        torch.save(self.model.state_dict(), save_path)
-        print(f"Model weights have been saved at {save_path}")
-
-    def get_portfolio(self, recent_data: pd.DataFrame):
-        self.model.load_state_dict(torch.load(path))
-        self.model.eval()  # set model to evaluation mode
-
-        weights = []
-        for column in recent_data.columns:
-            # Preprocess the most recent data for each stock
-            last_values = recent_data[column].iloc[-self.lookback:]
-            scaled_data = self.scaler.transform(last_values.values.reshape(-1, 1))
-            X_test = torch.tensor(scaled_data, dtype=torch.float).view(1, 1,
-                                                                       self.lookback)  # reshape into (1, 1, lookback)
-
-            # Use the model to predict on this data
-            with torch.no_grad():
-                prediction = self.model(X_test)
-
-            # Convert the model's prediction to a portfolio recommendation
-            weights.append(prediction.item())
-
-        # Normalize the weights to sum up to 1
-        total_weight = sum(weights)
-        normalized_weights = [weight / total_weight for weight in weights]
-
-        # Return a dictionary with stock names as keys and their respective weights as values
-        portfolio = dict(zip(recent_data.columns, normalized_weights))
-
-        return portfolio
-
-
 if __name__ == '__main__':
     with open("train_dataset.pkl", "rb") as f:
         data = pickle.load(f)
