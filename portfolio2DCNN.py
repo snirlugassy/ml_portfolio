@@ -13,7 +13,7 @@ num_stocks = 12
 class CNN2D(nn.Module):
     def __init__(self, lookback=30):
         super(CNN2D, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=num_stocks, kernel_size=(lookback, num_stocks),
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=10*num_stocks, kernel_size=(lookback, num_stocks),
                                stride=1, padding=0)
         self.flatten = nn.Flatten()
         self.fc = nn.Linear(num_stocks, num_stocks)
@@ -26,7 +26,7 @@ class CNN2D(nn.Module):
 
 
 class portfolio2CNN:
-    def __init__(self, lookback=30, lr=0.01, epochs=100):
+    def __init__(self, lookback=30, lr=0.0001, epochs=10000):
         self.lookback = lookback  # number of days to look back
         self.epochs = epochs
         self.lr = lr
