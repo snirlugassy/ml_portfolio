@@ -17,6 +17,22 @@ def find_mvp_portfolio(returns: pd.DataFrame):
     return x_mvp
 
 
+def find_sparce_mvp_portfolio(returns: pd.DataFrame, percentile=10):
+    """
+        Find the portfolio with the minimum variance but remove small weights.
+        :param returns: A pandas dataframe with the returns of the stocks.
+        :return: A numpy array with the weights of the portfolio.
+        """
+    cov_matrix = returns.cov()
+    inv_cov_matrix = np.linalg.pinv(cov_matrix)
+    e = np.ones(len(cov_matrix))
+    x_mvp = inv_cov_matrix @ e / (e @ inv_cov_matrix @ e)
+    # remove the % of the stocks with the lowest weights
+    x_mvp = x_mvp * 1 * (np.abs(x_mvp) > np.percentile(np.abs(x_mvp), percentile))
+    x_mvp /= x_mvp.sum()  # normalize the weights
+    return x_mvp
+
+
 def find_tangent_portfolio(returns: pd.DataFrame):
     """
     Find the tangent portfolio with the maximum Sharpe ratio.
