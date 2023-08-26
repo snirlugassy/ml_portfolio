@@ -22,6 +22,6 @@ class StockReturnsDataset(Dataset):
         return len(self.window_index)
 
     def __getitem__(self, index):
-        window = self.df.loc[self.window_index[index]]
+        window = self.returns.loc[self.window_index[index]]
         window = torch.from_numpy(window.values).float()
         return window[:-1], window[-1]

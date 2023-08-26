@@ -1,9 +1,14 @@
+import os
+import sys
+import json
+import pickle
+from glob import glob
+
 import pandas as pd
 import yfinance as yf
 import numpy as np
+from mlp.network import RRNet
 from portfolio import Portfolio
-import pickle
-
 
 # START_DATE = '2017-08-01'
 # END_TEST_DATE = '2022-09-30'
@@ -19,11 +24,11 @@ def get_data():
     return data
 
 
-def test_portfolio(portfolio):
+def test_portfolio(strategy):
     print("Loading data...")
     full_train = get_data()
     returns = []
-    strategy = portfolio()
+    # strategy = portfolio(weights_path)
     for test_date in pd.date_range(END_TRAIN_DATE, END_TEST_DATE):
         if test_date not in full_train.index:
             continue
@@ -37,7 +42,7 @@ def test_portfolio(portfolio):
         cur_return = cur_portfolio @ test_data
         returns.append({'date': test_date, 'return': cur_return})
     returns = pd.DataFrame(returns).set_index('date')
-    mean_return, std_returns = float(returns.mean()), float(returns.std())
+    mean_return, std_returns = returns.mean(), returns.std()
     sharpe = mean_return / std_returns
     print("Sharp Ratio: ", sharpe)
 
@@ -47,4 +52,24 @@ def test_portfolio(portfolio):
     print("Portfolio Variance: ", port_variance)
 
 if __name__ == '__main__':
-    test_portfolio(Portfolio)
+    models = glob("./experiments/*/*.pth")
+    for model in models:
+        model_dir = os.path.dirname(model)
+        model_args = os.path.join(model_dir, "args.json")
+        with open(model_args) as f:
+            args = json.load(f)
+
+        model_stocks = os.path.join(model_dir, "stocks.txt")
+        with open(model_stocks) as f:
+            stocks = f.readlines()
+
+        net = RRNet(dim=len(stocks), depth=args['depth'])
+        strategy = Portfolio(net)
+
+        print("----------------------------------")
+        print(model)
+        try:
+            test_portfolio(strategy)
+        except:
+            print("FAILED")
+        print("----------------------------------")
