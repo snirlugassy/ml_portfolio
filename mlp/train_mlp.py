@@ -40,7 +40,7 @@ if __name__ == "__main__":
     args = argparse.ArgumentParser()
     args.add_argument("--seed", type=int)
     args.add_argument("--epochs", type=int)
-    args.add_argument("--batch_size", type=int, default=50)
+    args.add_argument("--batch_size", type=int, default=64)
     args.add_argument("--depth", type=int)
     args.add_argument("--dropout", type=float)
     args.add_argument("--learning-rate", type=float)
@@ -53,6 +53,8 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
 
     experiment_id = str(uuid4()).replace("-", "")[:8]
+    print("EXPERIMENT:", experiment_id)
+
     experiment_dir = os.path.join("./experiments/", experiment_id)
     os.makedirs(experiment_dir, exist_ok=False)
 
@@ -89,7 +91,7 @@ if __name__ == "__main__":
     print("train dataset length", len(train_dataset))
     print("test dataset length", len(test_dataset))
 
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
     dim = len(stocks)

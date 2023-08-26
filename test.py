@@ -43,15 +43,20 @@ def test_portfolio(strategy):
         returns.append({'date': test_date, 'return': cur_return})
     returns = pd.DataFrame(returns).set_index('date')
     mean_return, std_returns = returns.mean(), returns.std()
-    sharpe = mean_return / std_returns
+    sharpe = float(mean_return / std_returns)
     print("Sharp Ratio: ", sharpe)
 
     # portfolio variance
     cov_matrix = full_train['Adj Close'].pct_change().cov()
-    port_variance = np.dot(cur_portfolio.T, np.dot(cov_matrix, cur_portfolio))
+    port_variance = float(np.dot(cur_portfolio.T, np.dot(cov_matrix, cur_portfolio)))
     print("Portfolio Variance: ", port_variance)
 
+    return sharpe, port_variance
+
 if __name__ == '__main__':
+
+    results = []
+
     models = glob("./experiments/*/*.pth")
     for model in models:
         model_dir = os.path.dirname(model)
@@ -69,7 +74,15 @@ if __name__ == '__main__':
         print("----------------------------------")
         print(model)
         try:
-            test_portfolio(strategy)
+            s,v = test_portfolio(strategy)
+            results.append({
+                "model": model,
+                "sharpe": s,
+                "variance": v
+            })
         except:
             print("FAILED")
         print("----------------------------------")
+    
+    results = pd.DataFrame(results)
+    results.to_csv("results.csv", index=False)
