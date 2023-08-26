@@ -7,7 +7,7 @@ from sklearn.preprocessing import MinMaxScaler
 import pickle
 
 path = "CNNportfolio_weights.pt"
-num_stocks = 12
+num_stocks = 503
 
 
 class CNN2D(nn.Module):
@@ -16,7 +16,7 @@ class CNN2D(nn.Module):
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=10*num_stocks, kernel_size=(lookback, num_stocks),
                                stride=1, padding=0)
         self.flatten = nn.Flatten()
-        self.fc = nn.Linear(num_stocks, num_stocks)
+        self.fc = nn.Linear(10* num_stocks, num_stocks)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -36,6 +36,7 @@ class portfolio2CNN:
         self.optimizer = Adam(self.model.parameters(), lr=self.lr)
 
     def train_wights(self, training_stock_df):
+        print("Training model...")
         for epoch in range(self.epochs):
             total_loss = 0
             training_days = training_stock_df.shape[0]
@@ -72,7 +73,7 @@ if __name__ == '__main__':
         data = pickle.load(f)
 
     adj_close = data['Adj Close']
-    adj_close = adj_close.iloc[-31:, -num_stocks:]
+    # adj_close = adj_close.iloc[-31:, -num_stocks:]
     returns = adj_close.pct_change(1, fill_method="ffill")
     print(data)
 
