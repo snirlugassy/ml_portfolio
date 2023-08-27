@@ -1,7 +1,6 @@
 #!/bin/bash
-depths=(1 2 3);
+depths=(5 7 10);
 lrs=(0.0001 0.001 0.005);
-
 
 for norm_factor in $(seq 0.0 0.1 0.4); do
 for learning_rate in ${lrs[@]}; do
@@ -12,10 +11,10 @@ for depth in ${depths[@]}; do
         --epochs=150 \
         --batch_size=256 \
         --pct-change=1 \
-        --depth=10 \
+        --depth=$depth \
         --dropout=0.05 \
         --normalization-factor=$norm_factor \
-        --learning-rate=0.00001 \
+        --learning-rate=$learning_rate \
         --step-lr-gamma=0.95 \
         --step-lr-every=15 \
         --use_batch_norm \
@@ -28,10 +27,10 @@ for depth in ${depths[@]}; do
         --epochs=150 \
         --batch_size=256 \
         --pct-change=1 \
-        --depth=10 \
+        --depth=$depth \
         --dropout=0.05 \
         --normalization-factor=$norm_factor \
-        --learning-rate=0.00001 \
+        --learning-rate=$learning_rate \
         --step-lr-gamma=0.95 \
         --step-lr-every=15 \
         --apply_augments \
