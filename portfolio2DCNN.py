@@ -1,10 +1,12 @@
-import pandas as pd
+import pickle
+
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
-from torch.optim import Adam
 from sklearn.preprocessing import MinMaxScaler
-import pickle
+from torch.optim import Adam
+import tqdm
 
 path = "CNNportfolio_weights.pt"
 num_stocks = 503
@@ -26,18 +28,22 @@ class CNN2D(nn.Module):
 
 
 class portfolio2CNN:
-    def __init__(self, lookback=30, lr=0.0001, epochs=10000):
+    def __init__(self, lookback=30, lr=0.0001, epochs=100, device="cuda:0"):
+        self.device = device
+
         self.lookback = lookback  # number of days to look back
         self.epochs = epochs
         self.lr = lr
         self.model = CNN2D(lookback)
+        self.model = self.model.to(self.device)
+
         self.scaler = MinMaxScaler(feature_range=(0, 1))
         self.criterion = nn.MSELoss()
         self.optimizer = Adam(self.model.parameters(), lr=self.lr)
 
     def train_wights(self, training_stock_df):
         print("Training model...")
-        for epoch in range(self.epochs):
+        for epoch in tqdm.trange(self.epochs):
             total_loss = 0
             training_days = training_stock_df.shape[0]
             for i in range(0, training_days - self.lookback):
@@ -50,6 +56,9 @@ class portfolio2CNN:
                 input_window = torch.tensor(input_window, dtype=torch.float).unsqueeze(0).unsqueeze(1)
                 ground_truth = torch.tensor(ground_truth, dtype=torch.float)  # shape: (num_stocks,)
 
+                input_window = input_window.to(self.device)
+                ground_truth = ground_truth.to(self.device)
+
                 output = self.model(input_window).squeeze()  # Remove batch and channel dimensions
                 loss = self.criterion(ground_truth, output)
 
@@ -57,8 +66,9 @@ class portfolio2CNN:
                 self.optimizer.step()
                 total_loss += loss.item()
 
-            if (epoch + 1) % 20 == 0:  # Print progress every 20 epochs
-                print(f"Epoch: {epoch + 1}/{self.epochs}, Loss: {total_loss}")
+            if (epoch + 1) % 5 == 0:  # Print progress every 20 epochs
+                tqdm.tqdm.write(f"Loss: {total_loss}")
+    
         torch.save(self.model.state_dict(), path)
         print(f"Model weights have been saved at {path}")
 
