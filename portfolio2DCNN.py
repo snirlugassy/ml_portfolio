@@ -1,17 +1,27 @@
+import os
 import pickle
 
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+import tqdm
 from sklearn.preprocessing import MinMaxScaler
 from torch.optim import Adam
-import tqdm
 
-path = "CNNportfolio_weights.pt"
+## Config
 num_stocks = 503
+output_dir = "./experiments/cnn_v1/"
+os.makedirs(output_dir, exist_ok=True)
+
+def build_checkpoint_path(suffix):
+    return os.path.join(output_dir, f"CNNportfolio_weights_{suffix}.pth")
+
+seed = 42
+torch.manual_seed(seed) # reproducability
 
 
+## Network
 class CNN2D(nn.Module):
     def __init__(self, lookback=30):
         super(CNN2D, self).__init__()
@@ -66,14 +76,16 @@ class portfolio2CNN:
                 self.optimizer.step()
                 total_loss += loss.item()
 
-            if (epoch + 1) % 5 == 0:  # Print progress every 20 epochs
+            if (epoch + 1) % 5 == 0:  # Print progress
                 tqdm.tqdm.write(f"Loss: {total_loss}")
-    
-        torch.save(self.model.state_dict(), path)
-        print(f"Model weights have been saved at {path}")
 
-    def get_portfolio(self, recent_data: pd.DataFrame):
-        self.model.load_state_dict(torch.load(path))
+            if (epoch + 1) % 20 == 0:  # Save checkpoint
+                torch.save(self.model.state_dict(), build_checkpoint_path(epoch))
+    
+        torch.save(self.model.state_dict(), build_checkpoint_path("FINAL"))
+
+    def get_portfolio(self, recent_data: pd.DataFrame, checkpoint_path:str):
+        self.model.load_state_dict(torch.load(checkpoint_path))
         self.model.eval()  # set model to evaluation mode
         return self.model(recent_data.iloc[-31:, -num_stocks:])
 

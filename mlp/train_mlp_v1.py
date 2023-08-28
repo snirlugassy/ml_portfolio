@@ -39,13 +39,14 @@ def test_model(model, loader, device):
 
 if __name__ == "__main__":
     args = argparse.ArgumentParser()
-    args.add_argument("--seed", type=int)
-    args.add_argument("--epochs", type=int)
+    args.add_argument("--output-dir", type=str, required=True)
+    args.add_argument("--epochs", type=int, required=True)
+    args.add_argument("--seed", type=int, required=True)
+    args.add_argument("--depth", type=int, required=True)
     args.add_argument("--batch_size", type=int, default=64)
     args.add_argument("--pct-change", type=int, default=1)
-    args.add_argument("--depth", type=int)
-    args.add_argument("--dropout", type=float)
-    args.add_argument("--learning-rate", type=float)
+    args.add_argument("--dropout", type=float, default=0.0)
+    args.add_argument("--learning-rate", type=float, default=0.001)
     args.add_argument("--normalization-factor", type=float, default=0.01)
     args.add_argument("--normalization-order", type=int, default=1)
     args.add_argument("--step-lr-gamma", type=float, default=0.9)
@@ -62,7 +63,7 @@ if __name__ == "__main__":
     experiment_id = str(uuid4()).replace("-", "")[:8]
     print("EXPERIMENT:", experiment_id)
 
-    experiment_dir = os.path.join("./experiments/", experiment_id)
+    experiment_dir = os.path.join(args.output_dir, experiment_id)
     os.makedirs(experiment_dir, exist_ok=False)
 
     with open(os.path.join(experiment_dir, "args.json"), "w") as f:

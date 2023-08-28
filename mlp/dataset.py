@@ -18,7 +18,6 @@ class SingleReturnsDataset(Dataset):
         # preprocess dataset
         self.returns = dataset.pct_change(pct_change, fill_method="ffill")[pct_change:]
         self.apply_augment = apply_augment
-        # self.bernoulli_dist = torch.distributions.Bernoulli(0.95)
         
     def __len__(self):
         return len(self.returns) - 1

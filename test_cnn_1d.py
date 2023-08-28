@@ -3,7 +3,7 @@ import sys
 import json
 import pickle
 from glob import glob
-import torch
+
 import pandas as pd
 import numpy as np
 from mlp.network import RRNet
@@ -65,14 +65,12 @@ if __name__ == '__main__':
             stocks = f.readlines()
             stocks = [str(s).strip() for s in stocks]
 
+        net = RRNet(dim=len(stocks), depth=args['depth']).eval()
+        strategy = Portfolio(net, stocks, seed=model_seed)
+
         print("----------------------------------")
         print(model)
         try:
-            net = RRNet(dim=len(stocks), depth=args['depth']).eval()
-            net.load_state_dict(torch.load(model), strict=False)
-
-            strategy = Portfolio(net, stocks, seed=model_seed)
-
             s,v = test_portfolio(strategy)
             results.append({
                 "model": model,

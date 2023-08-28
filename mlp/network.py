@@ -22,8 +22,6 @@ class RRNet(torch.nn.Module):
         self.mlps = torch.nn.Sequential(*_mlps)
 
     def forward(self, x):
-        # forward pass with skip connection
-        # return x + self.mlps(x)
         y = self.mlps(x)
 
         if self.use_skip_connection:
@@ -34,7 +32,7 @@ class RRNet(torch.nn.Module):
         return y
 
 
-class RRNet2(torch.nn.Module):
+class RRNetV2(torch.nn.Module):
     def __init__(self, dim, depth, activation=torch.nn.ReLU, dropout=0.3, batch_norm=True, skip_connection=True) -> None:
         super().__init__()
         self.dim = dim
