@@ -14,6 +14,7 @@ hypothesis = [
     mvp_portfolio(30),
     mvp_portfolio(40),
     mvp_portfolio(50),
+    portfolio2CNN(),
     # portfolio2CNN()
 ]
 
@@ -22,7 +23,7 @@ class Portfolio:
     def __init__(self, weights=np.NaN, gamma=0.5):
         self.hypothesis = hypothesis
         self.weights =  {h: 1 / len(self.hypothesis) for h in self.hypothesis}
-        self.gamma = gamma
+        self.gamma = self._load_gamma()
         self.prediction_history = self._load_prediction_history()
         pass
 
