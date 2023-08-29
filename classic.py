@@ -17,12 +17,26 @@ def find_mvp_portfolio(returns: pd.DataFrame):
     return x_mvp
 
 
+class mvp_portfolio:
+    def __init__(self, percentile=0):
+        self.percentile = percentile
+        pass
+
+    def train(self, train_data:pd.DataFrame):
+        pass
+
+    def get_portfolio(self, train_data: pd.DataFrame):
+        return find_sparce_mvp_portfolio(train_data, percentile=self.percentile)
+
+
+
 def find_sparce_mvp_portfolio(returns: pd.DataFrame, percentile=10):
     """
         Find the portfolio with the minimum variance but remove small weights.
         :param returns: A pandas dataframe with the returns of the stocks.
         :return: A numpy array with the weights of the portfolio.
         """
+    returns.loc[:, :] = returns.fillna(0)
     cov_matrix = returns.cov()
     inv_cov_matrix = np.linalg.pinv(cov_matrix)
     e = np.ones(len(cov_matrix))
