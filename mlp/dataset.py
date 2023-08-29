@@ -6,17 +6,19 @@ import pandas as pd
 from torch.utils.data import Dataset
 
 
-RANDOM_NOISE_PROB = 0.4
+RANDOM_NOISE_PROB = 0.5
 RANDOM_DELETE_PROB = 0.1
 RANDOM_DELETE_PERCENT = 0.02
-RANDOM_NEGATIVE_MARKET_PROB = 0.1
+RANDOM_NEGATIVE_MARKET_PROB = 0.0
 
 
 class SingleReturnsDataset(Dataset):
     def __init__(self, dataset: pd.DataFrame, apply_augment=True, pct_change=1) -> None:
         super().__init__()
         # preprocess dataset
-        self.returns = dataset.pct_change(pct_change, fill_method="ffill")[pct_change:]
+        self.dataset = dataset['Adj Close'].fillna(method="ffill")
+        self.returns = self.dataset.pct_change(pct_change).fillna(0.0)[pct_change:]
+        print("number of nan", self.returns.isna().sum().sum())
         self.apply_augment = apply_augment
         
     def __len__(self):

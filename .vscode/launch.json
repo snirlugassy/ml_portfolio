@@ -1,0 +1,34 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "train_mlp_v1.py",
+            "cwd": "/home/snirlugassy/ml_portfolio",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--output-dir=/home/snirlugassy/ml_portfolio/experiments/mlp_v1/",
+                "--seed=42",
+                "--epochs=200",
+                "--batch_size=256",
+                "--pct-change=1",
+                "--depth=5",
+                "--dropout=0.2",
+                "--normalization-factor=0",
+                "--learning-rate=0.001",
+                "--step-lr-gamma=0.9",
+                "--step-lr-every=15",
+                "--use_batch_norm",
+                "--use_skip_connection",
+                "--apply_augments",
+                "--device=cuda:0"
+            ]
+        }
+    ]
+}

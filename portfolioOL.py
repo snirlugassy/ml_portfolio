@@ -1,11 +1,37 @@
-import numpy as np
-import pandas as pd
+import json
+import os
 import pickle
-from sklearn.model_selection import train_test_split
 import sys
 
+import numpy as np
+import pandas as pd
+import torch
+from sklearn.model_selection import train_test_split
+
 from classic import mvp_portfolio
+from mlp.network import RRNet
 from portfolio2DCNN import portfolio2CNN
+from portfolio import NetworkPortfolio
+
+
+def load_net(weights_path):
+    model_dir = os.path.dirname(weights_path)
+    model_args = os.path.join(model_dir, "args.json")
+    with open(model_args) as f:
+        args = json.load(f)
+
+    model_seed = args['seed']
+
+    model_stocks = os.path.join(model_dir, "stocks.txt")
+    with open(model_stocks) as f:
+        stocks = f.readlines()
+        stocks = [str(s).strip() for s in stocks]
+
+    net = RRNet(dim=len(stocks), depth=args['depth']).eval()
+    net.load_state_dict(torch.load(weights_path), strict=False)
+
+    return NetworkPortfolio(net, stocks, seed=model_seed)
+
 
 hypothesis = [
     mvp_portfolio(),
@@ -15,9 +41,12 @@ hypothesis = [
     mvp_portfolio(40),
     mvp_portfolio(50),
     portfolio2CNN(),
-    # portfolio2CNN()
+    load_net("./experiments/mlp_v1/a606cbb1/model_last.pth"),
+    load_net("./experiments/mlp_v1/e9e8cfdd/model_best_sharpe.pth"),
+    load_net("./experiments/mlp_v1/ee2dfd9c/model_best_sharpe.pth"),
+    load_net("./experiments/mlp_v1/df7e6079/model_best_sharpe.pth"),
+    load_net("./experiments/mlp_v1/e4cec215/model_best_sharpe.pth"),
 ]
-
 
 class Portfolio:
     def __init__(self, weights=np.NaN, gamma=0.5):

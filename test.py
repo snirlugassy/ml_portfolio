@@ -68,7 +68,7 @@ if __name__ == '__main__':
         print("----------------------------------")
         print(model)
         try:
-            net = RRNet(dim=len(stocks), depth=args['depth']).eval()
+            net = RRNet(dim=len(stocks), activation=torch.nn.ELU, depth=args['depth']).eval()
             net.load_state_dict(torch.load(model), strict=False)
 
             strategy = Portfolio(net, stocks, seed=model_seed)

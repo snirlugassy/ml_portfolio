@@ -25,9 +25,14 @@ class Portfolio:
         with torch.no_grad():
             portfolio = self.net(R).squeeze(0)
 
+        # return the portfolio to the original size
         w = torch.zeros(len(all_stocks))
         for v,s in zip(portfolio, self.stocks):
             i = all_stocks.index(s)
             w[i] = v
         
         return np.array(w)
+
+
+class NetworkPortfolio(Portfolio):
+    pass
