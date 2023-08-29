@@ -4,25 +4,24 @@ import pickle
 from sklearn.model_selection import train_test_split
 import sys
 
-from classic import find_mvp_portfolio, find_tangent_portfolio, find_sparce_mvp_portfolio
-from portfolio2DCNN import portfolio2DCNN
+from classic import mvp_portfolio
+from portfolio2DCNN import portfolio2CNN
 
 hypothesis = [
-    find_mvp_portfolio(),
-    find_sparce_mvp_portfolio(10),
-    find_sparce_mvp_portfolio(20),
-    find_sparce_mvp_portfolio(30),
-    find_sparce_mvp_portfolio(40),
-    find_sparce_mvp_portfolio(50),
-    find_tangent_portfolio(),
-    portfolio2DCNN()
+    mvp_portfolio(),
+    mvp_portfolio(10),
+    mvp_portfolio(20),
+    mvp_portfolio(30),
+    mvp_portfolio(40),
+    mvp_portfolio(50),
+    # portfolio2CNN()
 ]
 
 
 class Portfolio:
     def __init__(self, weights=np.NaN, gamma=0.5):
         self.hypothesis = hypothesis
-        self.weights = {hypothesis: 1 / len(self.hypothesis) for h in self.hypothesis}
+        self.weights =  {h: 1 / len(self.hypothesis) for h in self.hypothesis}
         self.gamma = gamma
         self.prediction_history = self._load_prediction_history()
         pass
@@ -45,7 +44,7 @@ class Portfolio:
         with open("prediction_history.pkl", "wb") as f:
             pickle.dump(self.prediction_history, f)
 
-    def learn_optimal_gamma(self, train_data, gamma_values=[0.1, 0.3, 0.5, 0.7, 0.9], window_size=31):
+    def train_gamma(self, train_data, gamma_values=[0.1, 0.3, 0.5, 0.7, 0.9], window_size=31):
         # Split the data into training and validation sets
         train_data, validation_data = train_test_split(train_data, test_size=0.2, shuffle=False)
 
@@ -105,7 +104,7 @@ class Portfolio:
 
             sys.stdout.write('\r')
             sys.stdout.write(
-                "[%-20s] %d%% - Current wights: %d" % ('=' * int(i / int(end_index / 20)), i, self.weights))
+                "[%-20s] %d%% - Current wights: %s" % ('=' * int(i / int(end_index / 20)), i, self.weights))
             sys.stdout.flush()
 
         # store weights
@@ -157,5 +156,6 @@ if __name__ == '__main__':
     with open("train_dataset.pkl", "rb") as f:
         data = pickle.load(f)
     portfolio = Portfolio()
+    portfolio.train_gamma(data)
     portfolio.train(data)
     print(portfolio.get_portfolio(data))
