@@ -18,7 +18,6 @@ class SingleReturnsDataset(Dataset):
         # preprocess dataset
         self.dataset = dataset['Adj Close'].fillna(method="ffill")
         self.returns = self.dataset.pct_change(pct_change).fillna(0.0)[pct_change:]
-        print("number of nan", self.returns.isna().sum().sum())
         self.apply_augment = apply_augment
         
     def __len__(self):

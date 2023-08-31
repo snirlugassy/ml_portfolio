@@ -3,6 +3,7 @@ import os
 import pickle
 import sys
 
+from tqdm import trange, tqdm
 import numpy as np
 import pandas as pd
 import torch
@@ -22,15 +23,11 @@ def load_net(weights_path):
 
     model_seed = args['seed']
 
-    model_stocks = os.path.join(model_dir, "stocks.txt")
-    with open(model_stocks) as f:
-        stocks = f.readlines()
-        stocks = [str(s).strip() for s in stocks]
-
-    net = RRNet(dim=len(stocks), depth=args['depth']).eval()
+    net = RRNet(503, depth=args['depth'],activation=torch.nn.ELU).eval()
     net.load_state_dict(torch.load(weights_path), strict=False)
+    net = net.eval()
 
-    return NetworkPortfolio(net, stocks, seed=model_seed)
+    return NetworkPortfolio(net, seed=model_seed)
 
 
 hypothesis = [
@@ -40,21 +37,23 @@ hypothesis = [
     mvp_portfolio(30),
     mvp_portfolio(40),
     mvp_portfolio(50),
-    portfolio2CNN(),
-    load_net("./experiments/mlp_v1/a606cbb1/model_last.pth"),
-    load_net("./experiments/mlp_v1/e9e8cfdd/model_best_sharpe.pth"),
-    load_net("./experiments/mlp_v1/ee2dfd9c/model_best_sharpe.pth"),
-    load_net("./experiments/mlp_v1/df7e6079/model_best_sharpe.pth"),
-    load_net("./experiments/mlp_v1/e4cec215/model_best_sharpe.pth"),
+    # portfolio2CNN(checkpoint_path="./experiments/cnn_v1/CNNportfolio_weights_FINAL.pth"),
+    load_net("./experiments/mlp_v1/10a0ad56/model_best_sharpe.pth"),
+    load_net("./experiments/mlp_v1/bc6f7f32/model_last.pth"),
+    load_net("./experiments/mlp_v1/0c0b6b55/model_last.pth"),
+    load_net("./experiments/mlp_v1/a01355c1/model_best_sharpe.pth"),
+    load_net("./experiments/mlp_v1/810565aa/model_best_sharpe.pth"),
 ]
 
 class Portfolio:
     def __init__(self, weights=np.NaN, gamma=0.5):
         self.hypothesis = hypothesis
-        self.weights =  {h: 1 / len(self.hypothesis) for h in self.hypothesis}
+        self.weights = {}
+        for i, _ in enumerate(self.hypothesis):
+            self.weights[i] = 1/len(self.hypothesis)
+        self.gamma = gamma
         self._load_gamma()
         self.prediction_history = self._load_prediction_history()
-        pass
 
     def _load_gamma(self):
         try:
@@ -111,31 +110,32 @@ class Portfolio:
     def train(self, train_data: pd.DataFrame, window_size=31):
         end_index = len(train_data) - window_size + 1
         print(f"current gamma: {self.gamma}")
-        for start in range(end_index):
-            results = []
+        for start in trange(end_index):
 
             window_data = train_data.iloc[start:start + window_size - 1]
             last_day_data = train_data.iloc[start + window_size - 1]
 
             # update weights
-            for hypothesis in self.hypothesis:
+            returns = np.zeros(len(self.hypothesis))
+            for i, hypothesis in enumerate(self.hypothesis):
                 portfolio_weights = hypothesis.get_portfolio(window_data)
-                recommendation = np.dot(portfolio_weights, last_day_data)
-                results.append((hypothesis, recommendation))
+                r = np.dot(portfolio_weights, last_day_data)
+                returns[i] = r
 
-            sorted_results = sorted(results, key=lambda x: x[1], reverse=True)
-            for i, (hypothesis, recommendation) in enumerate(sorted_results):
-                self.weights[hypothesis] = self.weights[hypothesis] * self.gamma ** i
+            returns_sorted_idx = np.argsort(-returns) # array of positions in the sorted array of returns
+            # sorted_results = sorted(results, key=lambda x: x[1], reverse=True)
+            for i, _ in enumerate(self.hypothesis):
+                self.weights[i] = self.weights[i] * self.gamma ** returns_sorted_idx[i]
 
             # normalize weights
             total_weight = sum(self.weights.values())
-            for hypothesis in self.hypothesis:
-                self.weights[hypothesis] /= total_weight
+            for i, _ in enumerate(self.hypothesis):
+                self.weights[i] /= total_weight
 
-            sys.stdout.write('\r')
-            sys.stdout.write(
-                "[%-20s] %d%% - Current wights: %s" % ('=' * int(i / int(end_index / 20)), i, self.weights))
-            sys.stdout.flush()
+            tqdm.write(f"Current wights: {self.weights.values()} max index = {np.argmax(list(self.weights.values()))}")
+            # sys.stdout.write('\r')
+            # sys.stdout.write()
+            # sys.stdout.flush()
 
         # store weights
         with open("portfolioOL_weights.pkl", "wb") as f:
@@ -147,36 +147,46 @@ class Portfolio:
     def _adjust_weights_based_on_outcome(self, actual_returns):
         # Adjust weights based on the difference between predicted and actual returns
         # This is a basic adjustment, and you can modify this based on your strategy
-        for hypothesis in self.hypothesis:
-            predicted_portfolio = hypothesis.get_portfolio(actual_returns)
+        for i, h in enumerate(self.hypothesis):
+            predicted_portfolio = h.get_portfolio(actual_returns)
             prediction_error = np.dot(predicted_portfolio - actual_returns, actual_returns)
-            self.weights[hypothesis] -= self.gamma * prediction_error
+            self.weights[i] -= self.gamma * prediction_error
 
         # Normalize weights after adjustment
         total_weight = sum(self.weights.values())
-        for hypothesis in self.hypothesis:
-            self.weights[hypothesis] /= total_weight
+        for i, _ in enumerate(self.hypothesis):
+            self.weights[i] /= total_weight
 
     def get_portfolio(self, train_data: pd.DataFrame):
         # load weights
         with open("portfolioOL_weights.pkl", "rb") as f:
             self.weights = pickle.load(f)
+
+        with open("best_gamma.pkl", "rb") as f:
+            self.gamma = pickle.load(f)
+
+        if 'Adj Close' in train_data.columns:
+            train_data = train_data[train_data.index.year >= 2023]
+            train_data = train_data['Adj Close'].fillna(method="ffill")
+            train_data = train_data.pct_change(1)[1:].fillna(0.0)
+
         # Assuming the last date in train_data is the current date
-        current_date = train_data.index[-1]
-        if current_date in self.prediction_history:
-            # If we've already made a prediction for this date, adjust weights
-            actual_returns = train_data.iloc[-1]  # Get the actual returns for the day
-            self._adjust_weights_based_on_outcome(actual_returns)
+        # current_date = train_data.index[-1]
+        # if current_date in self.prediction_history:
+        #     # If we've already made a prediction for this date, adjust weights
+        #     actual_returns = train_data.iloc[-1]  # Get the actual returns for the day
+        #     self._adjust_weights_based_on_outcome(actual_returns)
 
         # get portfolio
-        portfolioOL = sum(
-            [self.weights[hypothesis] * hypothesis.get_portfolio(train_data) for hypothesis in self.hypothesis])
+        portfolioOL: np.ndarray = np.sum([self.weights[i] * h.get_portfolio(train_data) for i, h in enumerate(self.hypothesis)], axis=0)
+        
+        assert len(portfolioOL) == len(train_data.columns)
 
         # normalize weights to sum to 1
         portfolioOL /= portfolioOL.sum()
 
         # save prediction history
-        self.prediction_history[current_date] = portfolioOL
+        # self.prediction_history[current_date] = portfolioOL
         self._save_prediction_history()
 
         return portfolioOL
@@ -185,7 +195,10 @@ class Portfolio:
 if __name__ == '__main__':
     with open("train_dataset.pkl", "rb") as f:
         data = pickle.load(f)
+    data = data[data.index.year >= 2023]
+    data = data['Adj Close'].fillna(method="ffill")
+    data = data.pct_change(1)[1:].fillna(0.0)
     portfolio = Portfolio()
-    portfolio.train_gamma(data)
-    portfolio.train(data)
+    # portfolio.train_gamma(data)
+    # portfolio.train(data)
     print(portfolio.get_portfolio(data))

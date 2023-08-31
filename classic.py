@@ -36,7 +36,7 @@ def find_sparce_mvp_portfolio(returns: pd.DataFrame, percentile=10):
         :param returns: A pandas dataframe with the returns of the stocks.
         :return: A numpy array with the weights of the portfolio.
         """
-    returns.loc[:, :] = returns.fillna(0)
+    returns.fillna(0.0, inplace=True)
     cov_matrix = returns.cov()
     inv_cov_matrix = np.linalg.pinv(cov_matrix)
     e = np.ones(len(cov_matrix))

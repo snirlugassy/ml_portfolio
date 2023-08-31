@@ -38,7 +38,7 @@ class CNN2D(nn.Module):
 
 
 class portfolio2CNN:
-    def __init__(self, lookback=30, lr=0.0001, epochs=100, device="cuda:0"):
+    def __init__(self, lookback=30, lr=0.0001, epochs=100, device="cuda:0", checkpoint_path=None):
         self.device = device
 
         self.lookback = lookback  # number of days to look back
@@ -46,6 +46,9 @@ class portfolio2CNN:
         self.lr = lr
         self.model = CNN2D(lookback)
         self.model = self.model.to(self.device)
+
+        if checkpoint_path is not None:
+            self.model.load_state_dict(torch.load(checkpoint_path))
 
         self.scaler = MinMaxScaler(feature_range=(0, 1))
         self.criterion = nn.MSELoss()
@@ -84,8 +87,7 @@ class portfolio2CNN:
     
         torch.save(self.model.state_dict(), build_checkpoint_path("FINAL"))
 
-    def get_portfolio(self, recent_data: pd.DataFrame, checkpoint_path:str):
-        self.model.load_state_dict(torch.load(checkpoint_path))
+    def get_portfolio(self, recent_data: pd.DataFrame):
         self.model.eval()  # set model to evaluation mode
         return self.model(recent_data.iloc[-31:, -num_stocks:])
 
